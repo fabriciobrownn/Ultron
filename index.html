@@ -1,8 +1,9 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>ULTRON - Assistente Virtual</title>
 <style>
   body {
@@ -152,26 +153,28 @@
 </style>
 </head>
 <body>
-  <div id="header">ULTRON - Assistente Virtual</div>
+<div id="header">ULTRON - Assistente Virtual</div>
+<div id="login-area">
+<input autocomplete="off" id="username" placeholder="Usuário" type="text"/>
+<input autocomplete="off" id="password" placeholder="Senha" type="password"/>
+<button onclick="login()">Entrar</button>
+<button onclick="loginWithGoogle()">Entrar com Google</button>
+<div id="login-error" style="color: #f55; margin-top: 10px;"></div>
+</div>
+<div id="chat-area" style="display:none;">
+<div class="bot message" style="opacity:1; transform:none;">Olá! Eu sou o ULTRON. Posso gerenciar sua agenda, te lembrar dos compromissos e informar a previsão do tempo para Santa Izabel do Pará. Pergunte "previsão do tempo".</div>
+</div>
+<div id="profile-area" style="display: none; color: white; padding: 15px;">
+<h3>Perfil do Usuário</h3>
+<p><strong>Nome:</strong> <span id="user-name"></span></p>
+<p><strong>Email:</strong> <span id="user-email"></span></p>
+<button onclick="logout()" style="margin-top:10px; padding: 8px 16px; border: none; border-radius: 20px; background: #444; color: white; cursor: pointer;">Sair</button>
+</div>
 
-  <div id="login-area">
-    <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
-    <input type="password" id="password" placeholder="Senha" autocomplete="off" />
-    <button onclick="login()">Entrar</button>
-    <button onclick="loginWithGoogle()">Entrar com Google</button>
-
-    <div id="login-error" style="color: #f55; margin-top: 10px;"></div>
-  </div>
-
-  <div id="chat-area" style="display:none;">
-    <div class="bot message" style="opacity:1; transform:none;">Olá! Eu sou o ULTRON. Posso gerenciar sua agenda, te lembrar dos compromissos e informar a previsão do tempo para Santa Izabel do Pará. Pergunte "previsão do tempo".</div>
-  </div>
-
-  <div id="input-area" style="display:none;">
-    <input type="text" id="userInput" autocomplete="off" placeholder="Digite sua mensagem ou comando..." />
-    <button onclick="sendMessage()">Enviar</button>
-  </div>
-
+<div id="input-area" style="display:none;">
+<input autocomplete="off" id="userInput" placeholder="Digite sua mensagem ou comando..." type="text"/>
+<button onclick="sendMessage()">Enviar</button>
+</div>
 <script>
   const users = {
     "usuario": "12345",
@@ -972,11 +975,9 @@
   });
 
 </script>
-
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCsXT7QaBPdAiBrNlYkgh_12W8V69FU1XI",
@@ -1008,13 +1009,22 @@
       loadAgenda();
       checkReminders();
       userInput.focus();
+      document.getElementById("user-name").innerText = nome;
+      document.getElementById("user-email").innerText = email;
+      document.getElementById("profile-area").style.display = "block";
     } catch (error) {
       console.error("Erro no login com Google:", error);
       alert("Erro ao fazer login com o Google.");
     }
   }
-</script>
 
+
+function logout() {
+  firebase.auth().signOut().then(() => {
+    alert("Você saiu.");
+    location.reload();
+  });
+}
+</script>
 </body>
 </html>
-
