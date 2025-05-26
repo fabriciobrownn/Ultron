@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ULTRON - Assistente Virtual</title>
 <style>
   body {
@@ -153,34 +152,26 @@
 </style>
 </head>
 <body>
-<div id="profile-toggle" onclick="toggleProfile()" style="position: fixed; top: 10px; right: 10px; z-index: 1000; cursor: pointer;">
-<img alt="Perfil" height="32" src="https://img.icons8.com/ios-filled/50/ffffff/user-male-circle.png" width="32"/>
-</div>
+  <div id="header">ULTRON - Assistente Virtual</div>
 
-<div id="header">ULTRON - Assistente Virtual</div>
-<div id="login-area">
-<input autocomplete="off" id="username" placeholder="Usuário" type="text"/>
-<input autocomplete="off" id="password" placeholder="Senha" type="password"/>
-<button onclick="login()">Entrar</button>
-<button onclick="loginWithGoogle()">Entrar com Google</button>
-<div id="login-error" style="color: #f55; margin-top: 10px;"></div>
-</div>
-<div id="chat-area" style="display:none;">
-<div class="bot message" style="opacity:1; transform:none;">Olá! Eu sou o ULTRON. Posso gerenciar sua agenda, te lembrar dos compromissos e informar a previsão do tempo para Santa Izabel do Pará. Pergunte "previsão do tempo".</div>
-</div>
-<div id="profile-panel" style="display:none; position: fixed; top: 0; right: 0; width: 250px; height: 100%; background: #1e1e1e; color: white; padding: 20px; box-shadow: -2px 0 5px rgba(0,0,0,0.5); z-index: 999;">
-<h3>Perfil</h3>
-<p><strong>Nome:</strong> <span id="user-name"></span></p>
-<p><strong>Email:</strong> <span id="user-email"></span></p>
-<button onclick="logout()" style="margin-top: 20px; padding: 10px 16px; background: #d9534f; border: none; color: white; border-radius: 4px; cursor: pointer;">Sair</button>
-<br/><br/>
-<button onclick="toggleProfile()" style="padding: 6px 12px; background: #555; border: none; color: white; border-radius: 4px;">Fechar</button>
-</div>
+  <div id="login-area">
+    <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
+    <input type="password" id="password" placeholder="Senha" autocomplete="off" />
+    <button onclick="login()">Entrar</button>
+    <button onclick="loginWithGoogle()">Entrar com Google</button>
 
-<div id="input-area" style="display:none;">
-<input autocomplete="off" id="userInput" placeholder="Digite sua mensagem ou comando..." type="text"/>
-<button onclick="sendMessage()">Enviar</button>
-</div>
+    <div id="login-error" style="color: #f55; margin-top: 10px;"></div>
+  </div>
+
+  <div id="chat-area" style="display:none;">
+    <div class="bot message" style="opacity:1; transform:none;">Olá! Eu sou o ULTRON. Posso gerenciar sua agenda, te lembrar dos compromissos e informar a previsão do tempo para Santa Izabel do Pará. Pergunte "previsão do tempo".</div>
+  </div>
+
+  <div id="input-area" style="display:none;">
+    <input type="text" id="userInput" autocomplete="off" placeholder="Digite sua mensagem ou comando..." />
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+
 <script>
   const users = {
     "usuario": "12345",
@@ -981,9 +972,11 @@
   });
 
 </script>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCsXT7QaBPdAiBrNlYkgh_12W8V69FU1XI",
@@ -1020,32 +1013,8 @@
       alert("Erro ao fazer login com o Google.");
     }
   }
-
-function toggleProfile() {
-  const panel = document.getElementById("profile-panel");
-  panel.style.display = panel.style.display === "none" ? "block" : "none";
-}
-
-function logout() {
-  firebase.auth().signOut().then(() => {
-    alert("Você saiu.");
-    location.reload();
-  });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  if (typeof firebase !== "undefined") {
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        const nome = user.displayName;
-        const email = user.email;
-        document.getElementById("user-name").innerText = nome;
-        document.getElementById("user-email").innerText = email;
-        document.getElementById("profile-toggle").style.display = "block";
-      }
-    });
-  }
-});
 </script>
+
 </body>
 </html>
+
