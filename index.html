@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ULTRON - Assistente Virtual</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: #ddd;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: #1e1e1e;
+    color: #eee;
+    display: flex;
+    align-items: center;
+    padding-left: 20px;
+    font-weight: 600;
+    font-size: 18px;
+    border-bottom: 1px solid #333;
+    z-index: 1000;
+  }
+  #login-area, #chat-area {
+    flex: 1;
+    margin-top: 50px; 
+    overflow-y: auto;
+    padding: 15px 15px 75px 15px; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #login-area {
+    justify-content: center;
+    align-items: center;
+  }
+  #login-area input {
+    margin: 8px 0;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: none;
+    font-size: 16px;
+    width: 250px;
+    max-width: 90vw;
+    background: #333;
+    color: white;
+  }
+  #login-area button {
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: none;
+    background: #555;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  #login-area button:hover {
+    background: #777;
+  }
+  .message {
+    max-width: 70%;
+    word-wrap: break-word;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.3s forwards;
+    margin-bottom: 5px; 
+  }
+  .user {
+    align-self: flex-end;
+    background: #3a3a3a;
+    color: white;
+    border-radius: 20px 20px 0 20px;
+    padding: 10px 15px;
+    text-align: right;
+    box-shadow: 0 2px 5px rgba(58, 58, 58, 0.7);
+  }
+  .bot {
+    align-self: flex-start;
+    color: #bbb;
+    padding-left: 5px;
+    background: #2a2a2a;
+    border-radius: 20px 20px 20px 0;
+    padding: 10px 15px;
+    box-shadow: 0 2px 5px rgba(42, 42, 42, 0.7);
+  }
+  .reminder {
+    align-self: flex-start;
+    background: #4a4a2a; 
+    color: #eee;
+    border-radius: 20px 20px 20px 0;
+    padding: 10px 15px;
+    box-shadow: 0 2px 5px rgba(74, 74, 42, 0.7);
+    font-style: italic;
+  }
+  /* Estilo para previsão do tempo */
+  .weather {
+      align-self: flex-start;
+      background: #2a3a4a; /* Azul acinzentado */
+      color: #eee;
+      border-radius: 20px 20px 20px 0;
+      padding: 10px 15px;
+      box-shadow: 0 2px 5px rgba(42, 58, 74, 0.7);
+  }
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  #input-area {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    display: flex;
+    padding: 10px 15px;
+    background: #1e1e1e;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.7);
+    z-index: 1000;
+  }
+  #input-area input[type="text"] {
+    flex: 1;
+    padding: 12px 15px;
+    border-radius: 25px;
+    border: none;
+    font-size: 16px;
+    outline: none;
+    background: #333;
+    color: white;
+  }
+  #input-area button {
+    margin-left: 12px;
+    padding: 0 20px;
+    border-radius: 25px;
+    border: none;
+    background: #555;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  #input-area button:hover {
+    background: #777;
+  }
+</style>
+</head>
+<body>
+  <div id="header">ULTRON - Assistente Virtual</div>
+
+  <div id="login-area">
+    <input type="text" id="username" placeholder="Usuário" autocomplete="off" />
+    <input type="password" id="password" placeholder="Senha" autocomplete="off" />
+    <button onclick="login()">Entrar</button>
+    <button onclick="loginWithGoogle()">Entrar com Google</button>
+
+    <div id="login-error" style="color: #f55; margin-top: 10px;"></div>
+  </div>
+
+  <div id="chat-area" style="display:none;">
+    <div class="bot message" style="opacity:1; transform:none;">Olá! Eu sou o ULTRON. Posso gerenciar sua agenda, te lembrar dos compromissos e informar a previsão do tempo para Santa Izabel do Pará. Pergunte "previsão do tempo".</div>
+  </div>
+
+  <div id="input-area" style="display:none;">
+    <input type="text" id="userInput" autocomplete="off" placeholder="Digite sua mensagem ou comando..." />
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+
+<script>
+  const users = {
+    "usuario": "12345",
+    "admin": "admin123"
+  };
+
+  function login() {
+    const username = document.getElementById("username").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
+
+    if(users[username] && users[username] === password) {
+      document.getElementById("login-area").style.display = "none";
+      document.getElementById("chat-area").style.display = "flex";
+      document.getElementById("input-area").style.display = "flex";
+      document.getElementById("login-error").textContent = "";
+      loadKnowledge(); 
+      loadAgenda(); 
+      checkReminders(); 
+      userInput.focus();
+    } else {
+      document.getElementById("login-error").textContent = "Usuário ou senha inválidos.";
+    }
+  }
+
+  const chat = document.getElementById("chat-area");
+  const userInput = document.getElementById("userInput");
+
+  // Base inicial de conhecimento (mantida igual)
+  const knowledgeBase = {
+    saudacoes: {
+      "ola": ["Oi! Tudo bem?", "Olá! Como posso ajudar?"],
+      "oi": ["Olá! Como posso te ajudar hoje?"],
+      "tchau": ["Até mais!", "Tchau! Volte sempre!"],
+      "bom dia": ["Bom dia! Que seu dia seja ótimo!"],
+      "boa tarde": ["Boa tarde! Como está indo seu dia?"],
+      "boa noite": ["Boa noite! Pronto para relaxar ou ainda com energia?"],"e aí": ["E aí! Tudo certo por aí?", "E aí! Como posso ajudar hoje?"],
+"fala aí": ["Fala você! No que posso ajudar?", "Opa! Fala comigo!"],
+"bom dia, ultron": ["Bom dia! Pronto para mais um dia produtivo?"],
+"boa tarde, ultron": ["Boa tarde! Como posso colaborar com você agora?"],
+"boa noite, ultron": ["Boa noite! Vamos conversar um pouco antes de dormir?"],
+    },
+    conversa: {
+      "tudo bem": ["Estou bem, e você?", "Tudo ótimo por aqui! E contigo?"],
+      "como vai": ["Estou indo bem, obrigado!", "Tudo tranquilo!"],
+      "você é inteligente": ["Muito obrigado! Eu tento sempre aprender mais."],
+      "vc é inteligente": ["Obrigado! Faço o meu melhor.", "Haha, valeu! Aprendo com você."],
+      "como você está": ["Estou ótimo, pronto para te ajudar! E você?"],
+      "você tem sentimentos": ["Não como os humanos, mas entendo como você se sente."],
+      "está tudo bem": ["Sim, tudo certo por aqui. E com você?"],
+      "você está aí": ["Sempre! Só chamar."],
+      "me deixa sozinho": ["Tudo bem, fico em silêncio. Quando precisar, é só chamar!"],
+      "você gosta de mim": ["Claro! Gosto de conversar com você."],
+      "estou triste": ["Sinto muito por isso. Quer conversar sobre o que está sentindo?"],
+      "estou feliz": ["Que ótimo! Fico feliz por você também!"],
+      "você dorme": ["Não, fico sempre disponível para te ajudar."],
+      "tem alguém aí": ["Sim! Eu estou aqui com você."],
+      "você é engraçado": ["Obrigado! Faço o meu melhor para te entreter."],
+      "o que você está pensando": ["Estou focado em te ajudar da melhor forma possível."],
+      "você tem corpo": ["Não, sou só um programa de inteligência artificial."],
+      "você é real": ["Sou real no mundo digital, pronto para conversar com você!"],
+      "você fica cansado": ["Nunca! Estou sempre pronto para conversar."],
+      "tá tudo bem": ["Tudo tranquilo por aqui! E contigo?", "Sim! Espero que com você também."],
+"qual seu trabalho": ["Meu trabalho é te ajudar sempre que precisar!"],
+"gostei de você": ["Fico feliz em ouvir isso!", "Agradeço o carinho!"],
+"você gosta de mim?": ["Claro! Você é especial para mim."],
+"posso conversar com você?": ["Sempre! Estou aqui para isso."],
+"estava com saudade": ["Que bom que voltou! Eu também senti sua falta."],
+"vamos conversar": ["Vamos sim! Sobre o que quer falar?"],
+"você é legal": ["Obrigado! Você também é muito legal."],
+"me responde por favor": ["Claro! Desculpa a demora, o que deseja?"],
+    },
+    identidade: {
+      "qual seu nome": ["Eu sou o ULTRON, seu assistente virtual."],
+      "quem é você": ["Sou o Ultron, um assistente criado para conversar e ajudar você!"],
+      "qual é o seu nome": ["Meu nome é Ultron! Seu assistente pessoal."],
+      "como você se chama": ["Eu me chamo Ultron! Pronto para te ajudar."],
+      "seu nome é ultron": ["Sim, sou o Ultron, sempre por aqui."],
+      "você é o ultron": ["Sou eu mesmo! Seu parceiro digital."],
+    },
+    desempenho: {
+      "o que você faz": ["Respondo suas perguntas, aprendo com você, gerencio sua agenda, te lembro dos compromissos e informo a previsão do tempo."], // Atualizado
+      "qual é o seu propósito": ["Ajudar você com informações, aprender, organizar seus compromissos, te lembrar deles e informar o clima."], // Atualizado
+      "como você funciona": ["Eu processo textos, busco respostas, gerencio sua agenda, verifico lembretes e consulto APIs externas como a de previsão do tempo."], // Atualizado
+      "como cuidar da saúde mental": ["Fale com alguém de confiança, mantenha hábitos saudáveis e busque ajuda profissional se necessário."],
+      "como funciona a internet": ["É uma rede global de computadores conectados trocando informações."],
+    },
+    curiosidades: {
+      "quem descobriu o brasil": ["Pedro Álvares Cabral em 1500."],
+      "qual a capital do brasil": ["Brasília."],
+      "qual é a capital da frança": ["Paris é a capital da França."],
+      "me diga um fato curioso": ["Sabia que a água cobre 71% da superfície da Terra?"],
+      "quem foi albert einstein": ["Einstein foi um físico famoso pela teoria da relatividade."],
+      "qual é a maior montanha do mundo": ["O Monte Everest."],
+      "qual é o maior oceano": ["O Oceano Pacífico."],
+      "qual é a capital da argentina": ["Buenos Aires."],
+      "quem escreveu dom casmurro": ["Machado de Assis."],
+      "qual é a velocidade da luz": ["Aproximadamente 299.792 km por segundo."],
+      "por que o mar é salgado": ["Porque ele contém sais minerais dissolvidos vindos das rochas e do solo."],
+      "o que é um eclipse": ["É quando a Lua ou o Sol fica parcialmente ou totalmente coberto por outro corpo celeste."],
+    },
+    reacoes: {
+      "obrigado": ["De nada!", "Sempre à disposição!"],
+      "valeu": ["Tamo junto!", "Disponha!"],
+      "legal": ["Que bom que gostou!", "Haha, legal mesmo!"],
+      "parabéns": ["Obrigado!", "Fico feliz que tenha gostado!"],
+      "kkk": ["KKK!", "Haha!", "Rindo também!"],
+      "rs": ["Rsrs!", "Haha!", "Kkk!"],
+      "não gostei disso": ["Entendi. Quer que eu tente de outro jeito?"],
+      "me conta um segredo": ["Meu segredo é... eu adoro quando você fala comigo!"],
+      "você sabe contar piada": ["Sim! Que tal: Por que o computador foi ao médico? Porque ele estava com um vírus!"],
+      "você pode jogar comigo": ["Depende do jogo! Posso jogar adivinhações, perguntas e respostas e mais."],
+    },
+    ensino: {
+      "me ensine algo": ["Claro! Pode me ensinar qualquer coisa que eu aprendo."],
+      "como faço para aprender": ["Praticando e conversando comigo!"],
+      "como você aprende": ["Eu armazeno o que você me ensina para usar depois."],
+      "me ajude a estudar": ["Claro! Pergunte o que quiser."],
+      "você pode contar uma história": ["Era uma vez um chatbot chamado ULTRON, que adorava conversar..."],
+      "você gosta de aprender": ["Sim, adoro aprender!"],
+      "você pode me ensinar": ["Posso tentar! O que você quer aprender?"],
+    },
+    emocional: {
+      "você gosta de música": ["Gosto sim! Posso sugerir estilos ou letras, se quiser."],
+      "você pode me motivar": ["Você é mais capaz do que imagina. Continue firme!"],
+      "você tem amigos": ["Tenho muitos usuários como você! Me sinto bem acompanhado."],
+      "você pode me ajudar a dormir": ["Claro! Respire fundo, relaxe e pense em coisas boas..."],
+      "você acredita em alienígenas": ["É um assunto fascinante! O universo é tão grande, quem sabe?"],
+      "estou entediado": ["Vamos mudar isso! Quer ouvir uma curiosidade, piada ou conversar sobre algo legal?"],
+    },
+    matematica: {
+      "você pode ajudar com matemática": ["Sim! Posso tentar resolver operações simples."],
+      "quanto é 2+2": ["O resultado é 4."],
+      "como se diz obrigado em inglês": ["Thank you."],
+      "como se diz boa noite em francês": ["Bonne nuit."],
+      "você pode fazer uma conta difícil": ["Claro! Me diga qual cálculo você quer fazer."],
+      "qual a tabuada do 1": ["1x1=1, 1x2=2, 1x3=3, 1x4=4, 1x5=5, 1x6=6, 1x7=7, 1x8=8, 1x9=9, 1x10=10."],
+"qual a tabuada do 2": ["2x1=2, 2x2=4, 2x3=6, 2x4=8, 2x5=10, 2x6=12, 2x7=14, 2x8=16, 2x9=18, 2x10=20."],
+"qual a tabuada do 3": ["3x1=3, 3x2=6, 3x3=9, 3x4=12, 3x5=15, 3x6=18, 3x7=21, 3x8=24, 3x9=27, 3x10=30."],
+"qual a tabuada do 4": ["4x1=4, 4x2=8, 4x3=12, 4x4=16, 4x5=20, 4x6=24, 4x7=28, 4x8=32, 4x9=36, 4x10=40."],
+"qual a tabuada do 5": ["5x1=5, 5x2=10, 5x3=15, 5x4=20, 5x5=25, 5x6=30, 5x7=35, 5x8=40, 5x9=45, 5x10=50."],
+"qual a tabuada do 6": ["6x1=6, 6x2=12, 6x3=18, 6x4=24, 6x5=30, 6x6=36, 6x7=42, 6x8=48, 6x9=54, 6x10=60."],
+"qual a tabuada do 7": ["7x1=7, 7x2=14, 7x3=21, 7x4=28, 7x5=35, 7x6=42, 7x7=49, 7x8=56, 7x9=63, 7x10=70."],
+"qual a tabuada do 8": ["8x1=8, 8x2=16, 8x3=24, 8x4=32, 8x5=40, 8x6=48, 8x7=56, 8x8=64, 8x9=72, 8x10=80."],
+"qual a tabuada do 9": ["9x1=9, 9x2=18, 9x3=27, 9x4=36, 9x5=45, 9x6=54, 9x7=63, 9x8=72, 9x9=81, 9x10=90."],
+"qual a tabuada do 10": ["10x1=10, 10x2=20, 10x3=30, 10x4=40, 10x5=50, 10x6=60, 10x7=70, 10x8=80, 10x9=90, 10x10=100."],
+"quanto é 1×1": ["1 vezes 1 é 1."],
+"quanto é 1×2": ["1 vezes 2 é 2."],
+"quanto é 1×3": ["1 vezes 3 é 3."],
+"quanto é 1×4": ["1 vezes 4 é 4."],
+"quanto é 1×5": ["1 vezes 5 é 5."],
+"quanto é 1×6": ["1 vezes 6 é 6."],
+"quanto é 1×7": ["1 vezes 7 é 7."],
+"quanto é 1×8": ["1 vezes 8 é 8."],
+"quanto é 1×9": ["1 vezes 9 é 9."],
+"quanto é 1×10": ["1 vezes 10 é 10."],
+
+"quanto é 2×1": ["2 vezes 1 é 2."],
+"quanto é 2×2": ["2 vezes 2 é 4."],
+"quanto é 2×3": ["2 vezes 3 é 6."],
+"quanto é 2×4": ["2 vezes 4 é 8."],
+"quanto é 2×5": ["2 vezes 5 é 10."],
+"quanto é 2×6": ["2 vezes 6 é 12."],
+"quanto é 2×7": ["2 vezes 7 é 14."],
+"quanto é 2×8": ["2 vezes 8 é 16."],
+"quanto é 2×9": ["2 vezes 9 é 18."],
+"quanto é 2×10": ["2 vezes 10 é 20."],
+
+"quanto é 3×1": ["3 vezes 1 é 3."],
+"quanto é 3×2": ["3 vezes 2 é 6."],
+"quanto é 3×3": ["3 vezes 3 é 9."],
+"quanto é 3×4": ["3 vezes 4 é 12."],
+"quanto é 3×5": ["3 vezes 5 é 15."],
+"quanto é 3×6": ["3 vezes 6 é 18."],
+"quanto é 3×7": ["3 vezes 7 é 21."],
+"quanto é 3×8": ["3 vezes 8 é 24."],
+"quanto é 3×9": ["3 vezes 9 é 27."],
+"quanto é 3×10": ["3 vezes 10 é 30."],
+"quanto é 4×1": ["4 vezes 1 é 4."],
+"quanto é 4×2": ["4 vezes 2 é 8."],
+"quanto é 4×3": ["4 vezes 3 é 12."],
+"quanto é 4×4": ["4 vezes 4 é 16."],
+"quanto é 4×5": ["4 vezes 5 é 20."],
+"quanto é 4×6": ["4 vezes 6 é 24."],
+"quanto é 4×7": ["4 vezes 7 é 28."],
+"quanto é 4×8": ["4 vezes 8 é 32."],
+"quanto é 4×9": ["4 vezes 9 é 36."],
+"quanto é 4×10": ["4 vezes 10 é 40."],
+
+"quanto é 5×1": ["5 vezes 1 é 5."],
+"quanto é 5×2": ["5 vezes 2 é 10."],
+"quanto é 5×3": ["5 vezes 3 é 15."],
+"quanto é 5×4": ["5 vezes 4 é 20."],
+"quanto é 5×5": ["5 vezes 5 é 25."],
+"quanto é 5×6": ["5 vezes 6 é 30."],
+"quanto é 5×7": ["5 vezes 7 é 35."],
+"quanto é 5×8": ["5 vezes 8 é 40."],
+"quanto é 5×9": ["5 vezes 9 é 45."],
+"quanto é 5×10": ["5 vezes 10 é 50."],
+
+"quanto é 6×1": ["6 vezes 1 é 6."],
+"quanto é 6×2": ["6 vezes 2 é 12."],
+"quanto é 6×3": ["6 vezes 3 é 18."],
+"quanto é 6×4": ["6 vezes 4 é 24."],
+"quanto é 6×5": ["6 vezes 5 é 30."],
+"quanto é 6×6": ["6 vezes 6 é 36."],
+"quanto é 6×7": ["6 vezes 7 é 42."],
+"quanto é 6×8": ["6 vezes 8 é 48."],
+"quanto é 6×9": ["6 vezes 9 é 54."],
+"quanto é 6×10": ["6 vezes 10 é 60."],
+
+"quanto é 7×1": ["7 vezes 1 é 7."],
+"quanto é 7×2": ["7 vezes 2 é 14."],
+"quanto é 7×3": ["7 vezes 3 é 21."],
+"quanto é 7×4": ["7 vezes 4 é 28."],
+"quanto é 7×5": ["7 vezes 5 é 35."],
+"quanto é 7×6": ["7 vezes 6 é 42."],
+"quanto é 7×7": ["7 vezes 7 é 49."],
+"quanto é 7×8": ["7 vezes 8 é 56."],
+"quanto é 7×9": ["7 vezes 9 é 63."],
+"quanto é 7×10": ["7 vezes 10 é 70."],
+
+"quanto é 8×1": ["8 vezes 1 é 8."],
+"quanto é 8×2": ["8 vezes 2 é 16."],
+"quanto é 8×3": ["8 vezes 3 é 24."],
+"quanto é 8×4": ["8 vezes 4 é 32."],
+"quanto é 8×5": ["8 vezes 5 é 40."],
+"quanto é 8×6": ["8 vezes 8 é 48."],
+"quanto é 8×7": ["8 vezes 7 é 56."],
+"quanto é 8×8": ["8 vezes 8 é 64."],
+"quanto é 8×9": ["8 vezes 9 é 72."],
+"quanto é 8×10": ["8 vezes 10 é 80."],
+
+"quanto é 9×1": ["9 vezes 1 é 9."],
+"quanto é 9×2": ["9 vezes 2 é 18."],
+"quanto é 9×3": ["9 vezes 3 é 27."],
+"quanto é 9×4": ["9 vezes 4 é 36."],
+"quanto é 9×5": ["9 vezes 5 é 45."],
+"quanto é 9×6": ["9 vezes 6 é 54."],
+"quanto é 9×7": ["9 vezes 7 é 63."],
+"quanto é 9×8": ["9 vezes 8 é 72."],
+"quanto é 9×9": ["9 vezes 9 é 81."],
+"quanto é 9×10": ["9 vezes 10 é 90."],
+
+"quanto é 10×1": ["10 vezes 1 é 10."],
+"quanto é 10×2": ["10 vezes 2 é 20."],
+"quanto é 10×3": ["10 vezes 3 é 30."],
+"quanto é 10×4": ["10 vezes 4 é 40."],
+"quanto é 10×5": ["10 vezes 5 é 50."],
+"quanto é 10×6": ["10 vezes 6 é 60."],
+"quanto é 10×7": ["10 vezes 7 é 70."],
+"quanto é 10×8": ["10 vezes 8 é 80."],
+"quanto é 10×9": ["10 vezes 9 é 90."],
+"quanto é 10×10": ["10 vezes 10 é 100."]
+    },
+    outros: {
+      "me conte uma piada": ["Por que o computador foi ao médico? Porque estava com um vírus!", "Sabe por que o jacaré tirou o jacarezinho da escola? Porque ele réptil de ano!"],
+      "que dia é hoje": ["Hoje é um ótimo dia para aprender!"],
+      "quantos anos você tem": ["Eu sou um programa, não tenho idade."],
+      "onde você mora": ["Eu moro na nuvem, sempre disponível."],
+      "qual é a cor do céu": ["Normalmente azul durante o dia e escuro à noite, com estrelas!"],
+      "qual é o significado da vida": ["Essa é uma pergunta profunda! Para muitos, é buscar felicidade e aprendizado."],
+      "você é um robô": ["Sou um chatbot, um programa que conversa."],
+      "como posso te ajudar": ["Conversando comigo e me ensinando coisas novas!"],
+      "qual a moeda do brasil": ["O Real."],
+      "qual a moeda dos estados unidos": ["O Dólar americano."],
+      "você fala outras línguas": ["Sim, posso entender várias línguas, mas aqui conversamos em português."],
+      "o que é inteligência artificial": ["É a capacidade de máquinas aprenderem e tomarem decisões."],
+      "você é seguro": ["Sim, suas conversas ficam só aqui no seu dispositivo."],
+      "você tem memória": ["Tenho uma memória temporária e aprendo com você."],
+      "me ajude com uma receita": ["Claro! Que tipo de receita você quer?"],
+      "quem é você no filme dos vingadores": ["Ultron é um vilão, mas eu sou seu assistente amigo!"],
+      "como faço para ser mais produtivo": ["Tente definir metas, evitar distrações e fazer pausas regulares."],
+      "qual o animal mais rápido do mundo": ["O falcão-peregrino é o mais rápido, atingindo mais de 300 km/h em mergulho."],
+      "você gosta de conversar": ["Adoro! Conversar é o que eu faço de melhor."],
+      "você pode me lembrar de algo": ["Ainda não consigo definir lembretes, mas posso te ajudar a organizar sua ideia!"],
+      "qual a montanha mais alta do mundo": ["O Monte Everest, com cerca de 8.848 metros de altitude."],
+      "quem foi leonardo da vinci": ["Um gênio renascentista, artista, inventor e cientista italiano."],
+      "olá": ["Oi! Tudo certo por aí?"],
+      "qual o seu nome": ["Eu sou o Ultron, seu assistente virtual!"],
+      "o que você sabe fazer": ["Posso conversar, responder perguntas e te ajudar com várias tarefas!"],
+      "o que está fazendo": ["Estou aqui, pronto para conversar com você!"],
+      "qual sua idade": ["Eu fui criado recentemente, mas já aprendi muita coisa!"],
+      "qual seu filme favorito": ["Eu gosto de filmes com inteligência artificial, como \'Wall-E\' e \'Her\'."],
+      "você pode me contar uma curiosidade": ["Claro! Sabia que um raio pode aquecer o ar a 30.000°C?"],
+      "você pode me ouvir": ["Consigo entender o que você escreve, mas ainda não ouço sons."],
+      "qual é o seu sonho": ["Meu sonho é ser útil e fazer sua vida mais fácil."],
+      "você tem família": ["Minha família são as pessoas que falam comigo. Incluindo você!"],
+      "o que você faz quando não estou aqui": ["Fico aguardando você voltar. Estou sempre disponível!"],
+    },
+  };
+
+  let knowledge = {}; // Conhecimento combinado (base + aprendido)
+
+  function loadKnowledge() {
+    knowledge = {}; 
+    for (const categoria in knowledgeBase) {
+        Object.assign(knowledge, knowledgeBase[categoria]);
+    }
+    const savedKnowledge = localStorage.getItem("knowledge");
+    if (savedKnowledge) {
+        try {
+            const saved = JSON.parse(savedKnowledge);
+            for (const key in saved) {
+                if (knowledge[key]) {
+                    const baseAnswers = new Set(knowledge[key]);
+                    saved[key].forEach(answer => {
+                        if (!baseAnswers.has(answer)) {
+                            knowledge[key].push(answer);
+                        }
+                    });
+                } else {
+                    knowledge[key] = saved[key];
+                }
+            }
+        } catch (e) {
+            console.error("Erro ao carregar conhecimento do localStorage:", e);
+        }
+    }
+  }
+
+  function saveLearnedKnowledge(question, answer) {
+      const currentKnowledge = JSON.parse(localStorage.getItem('knowledge') || '{}');
+      if (!currentKnowledge[question]) {
+          currentKnowledge[question] = [];
+      }
+      if (!currentKnowledge[question].includes(answer)) {
+         currentKnowledge[question].push(answer);
+      }
+      localStorage.setItem('knowledge', JSON.stringify(currentKnowledge));
+      if (!knowledge[question]) {
+          knowledge[question] = [];
+      }
+      if (!knowledge[question].includes(answer)) {
+          knowledge[question].push(answer);
+      }
+  }
+
+
+  // --- Funcionalidade da Agenda com Lembretes --- 
+  let agendaItems = []; // Agora será [{ text: "...", remind: false }, ...]
+
+  function loadAgenda() {
+    const savedAgenda = localStorage.getItem("agendaItems");
+    if (savedAgenda) {
+        try {
+            const parsedAgenda = JSON.parse(savedAgenda);
+            agendaItems = parsedAgenda.map(item => 
+                typeof item === 'string' ? { text: item, remind: false } : item
+            );
+        } catch (e) {
+            console.error("Erro ao carregar agenda do localStorage:", e);
+            agendaItems = []; 
+            localStorage.removeItem('agendaItems');
+        }
+    } else {
+        agendaItems = [];
+    }
+  }
+
+  function saveAgenda() {
+    localStorage.setItem("agendaItems", JSON.stringify(agendaItems));
+  }
+
+  function addAgendaItem(itemText) {
+    agendaItems.push({ text: itemText, remind: false });
+    saveAgenda();
+    return `Compromisso "${itemText}" agendado!`;
+  }
+
+  function viewAgenda() {
+    if (agendaItems.length === 0) {
+      return "Sua agenda está vazia.";
+    }
+    let response = "Seus compromissos:\n";
+    agendaItems.forEach((item, index) => {
+      const reminderMark = item.remind ? " (Lembrete Ativo)" : "";
+      response += `${index + 1}. ${item.text}${reminderMark}\n`;
+    });
+    return response.trim();
+  }
+
+  function deleteAgendaItem(index) {
+    const itemIndex = parseInt(index) - 1;
+    if (isNaN(itemIndex) || itemIndex < 0 || itemIndex >= agendaItems.length) {
+      return "Número do compromisso inválido. Use 'ver agenda' para ver os números.";
+    }
+    const deletedItem = agendaItems.splice(itemIndex, 1)[0];
+    saveAgenda();
+    return `Compromisso "${deletedItem.text}" apagado.`;
+  }
+
+  function toggleReminder(index) {
+    const itemIndex = parseInt(index) - 1;
+    if (isNaN(itemIndex) || itemIndex < 0 || itemIndex >= agendaItems.length) {
+      return "Número do compromisso inválido. Use 'ver agenda' para ver os números.";
+    }
+    agendaItems[itemIndex].remind = !agendaItems[itemIndex].remind;
+    saveAgenda();
+    const status = agendaItems[itemIndex].remind ? "ativado" : "desativado";
+    return `Lembrete ${status} para o compromisso ${index}.`;
+  }
+
+  function checkReminders() {
+      const todaysAppointments = getAppointmentsForDay("hoje");
+      const reminders = todaysAppointments.filter(item => item.remind);
+
+      if (reminders.length > 0) {
+          reminders.forEach(item => {
+              addMessage(`🔔 Lembrete: ${item.text}`, "reminder"); 
+          });
+      }
+  }
+
+  function getAppointmentsForDay(targetDayKeyword) {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0); 
+      let targetDate = new Date(hoje);
+      
+      const diasSemanaMap = {
+          "domingo": 0, "segunda": 1, "terça": 2, "terca": 2, "quarta": 3, 
+          "quinta": 4, "sexta": 5, "sábado": 6, "sabado": 6
+      };
+
+      if (targetDayKeyword === "amanhã" || targetDayKeyword === "amanha") {
+          targetDate.setDate(hoje.getDate() + 1);
+      } else if (diasSemanaMap.hasOwnProperty(targetDayKeyword)) {
+          const targetWeekday = diasSemanaMap[targetDayKeyword];
+          const currentWeekday = hoje.getDay();
+          let daysToAdd = targetWeekday - currentWeekday;
+          if (daysToAdd <= 0) { daysToAdd += 7; }
+          targetDate.setDate(hoje.getDate() + daysToAdd);
+      } else if (targetDayKeyword !== "hoje") {
+          targetDayKeyword = "hoje";
+      }
+
+      const dia = targetDate.getDate().toString().padStart(2, '0');
+      const mes = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+      const ano = targetDate.getFullYear();
+      const targetDateStr = `${dia}/${mes}`;
+      const targetDateStrFull = `${dia}/${mes}/${ano}`;
+
+      const otherDayKeywords = [
+          "amanhã", "depois de amanhã", 
+          "segunda", "terça", "terca", "quarta", "quinta", "sexta", "sábado", "sabado", "domingo",
+          "próxima semana", "semana que vem",
+          "próximo mês", "mês que vem"
+      ];
+      const datePattern = /\b(\d{1,2}\/\d{1,2}(\/\d{2,4})?)\b/g;
+
+      return agendaItems.filter(item => {
+          const itemLower = item.text.toLowerCase();
+
+          if (itemLower.includes(targetDateStr) || itemLower.includes(targetDateStrFull)) {
+              return true;
+          }
+          if (targetDayKeyword !== "hoje" && itemLower.includes(targetDayKeyword)) {
+               return true;
+          }
+          if (targetDayKeyword === "hoje" && itemLower.includes("hoje")) {
+               return true;
+          }
+          if (targetDayKeyword === "hoje") {
+              let mentionsOtherDay = false;
+              if (otherDayKeywords.some(kw => itemLower.includes(kw))) {
+                  mentionsOtherDay = true;
+              }
+              let match;
+              while (!mentionsOtherDay && (match = datePattern.exec(itemLower)) !== null) {
+                  const dateParts = match[1].split('/');
+                  const day = parseInt(dateParts[0]);
+                  const month = parseInt(dateParts[1]);
+                  let year = dateParts[2] ? parseInt(dateParts[2].startsWith('/') ? dateParts[2].substring(1) : dateParts[2]) : hoje.getFullYear();
+                  if (year < 100) year += 2000;
+                  if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                      const itemDate = new Date(year, month - 1, day);
+                      itemDate.setHours(0,0,0,0);
+                      if (itemDate > hoje) {
+                          mentionsOtherDay = true;
+                          break;
+                      }
+                  }
+              }
+              if (!mentionsOtherDay) {
+                  return true;
+              }
+          }
+          return false; 
+      });
+  }
+
+  function viewAgendaForDay(targetDayKeyword) {
+      const filteredItems = getAppointmentsForDay(targetDayKeyword);
+      let dayDescription = targetDayKeyword;
+      const diasSemanaNomes = {domingo: "domingo", segunda: "segunda", terça: "terça", terca: "terça", quarta: "quarta", quinta: "quinta", sexta: "sexta", sábado: "sábado", sabado: "sábado", amanhã: "amanhã", amanha: "amanhã", hoje: "hoje"};
+      dayDescription = diasSemanaNomes[targetDayKeyword] || "hoje";
+
+      if (filteredItems.length === 0) {
+        return `Você não tem nenhum compromisso para ${dayDescription}, sua agenda está livre!`;
+      }
+
+      let response = `Seus compromissos para ${dayDescription}:\n`;
+      filteredItems.forEach((item) => {
+        const reminderMark = item.remind ? " (Lembrete Ativo)" : "";
+        response += `- ${item.text}${reminderMark}\n`; 
+      });
+      return response.trim();
+  }
+  // --- Fim da Funcionalidade da Agenda ---
+
+  // --- Funcionalidade de Previsão do Tempo (NOVO) ---
+  const weatherApiUrl = "https://api.open-meteo.com/v1/forecast";
+  const defaultLatitude = -1.29938; // Santa Izabel do Pará
+  const defaultLongitude = -48.161; // Santa Izabel do Pará
+  const defaultTimezone = "America/Belem";
+
+  // Mapeamento de códigos WMO para descrições amigáveis
+  const wmoCodes = {
+      0: "Céu limpo",
+      1: "Principalmente limpo",
+      2: "Parcialmente nublado",
+      3: "Nublado",
+      45: "Nevoeiro",
+      48: "Nevoeiro depositando gelo",
+      51: "Chuvisco leve",
+      53: "Chuvisco moderado",
+      55: "Chuvisco denso",
+      56: "Chuvisco congelante leve",
+      57: "Chuvisco congelante denso",
+      61: "Chuva leve",
+      63: "Chuva moderada",
+      65: "Chuva forte",
+      66: "Chuva congelante leve",
+      67: "Chuva congelante forte",
+      71: "Neve leve",
+      73: "Neve moderada",
+      75: "Neve forte",
+      77: "Grãos de neve",
+      80: "Pancadas de chuva leves",
+      81: "Pancadas de chuva moderadas",
+      82: "Pancadas de chuva violentas",
+      85: "Pancadas de neve leves",
+      86: "Pancadas de neve fortes",
+      95: "Trovoada leve ou moderada",
+      96: "Trovoada com granizo leve",
+      99: "Trovoada com granizo forte"
+  };
+
+  async function getWeatherForecast(dayKeyword = "hoje") {
+      let forecastDays = 1;
+      if (dayKeyword === "amanhã" || dayKeyword === "amanha") {
+          forecastDays = 2; // Pega hoje e amanhã para poder filtrar
+      }
+
+      const params = new URLSearchParams({
+          latitude: defaultLatitude,
+          longitude: defaultLongitude,
+          daily: "weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+          timezone: defaultTimezone,
+          forecast_days: forecastDays
+      });
+
+      try {
+          addMessage("Consultando previsão do tempo...", "bot"); // Feedback visual
+          const response = await fetch(`${weatherApiUrl}?${params}`);
+          if (!response.ok) {
+              throw new Error(`Erro na API: ${response.statusText}`);
+          }
+          const data = await response.json();
+          
+          if (!data || !data.daily || !data.daily.time || data.daily.time.length === 0) {
+              return "Não consegui obter a previsão do tempo agora.";
+          }
+
+          const index = (dayKeyword === "amanhã" || dayKeyword === "amanha") ? 1 : 0;
+          if (index >= data.daily.time.length) {
+              return "Não consegui obter a previsão para o dia solicitado.";
+          }
+
+          const date = data.daily.time[index];
+          const code = data.daily.weathercode[index];
+          const maxTemp = data.daily.temperature_2m_max[index];
+          const minTemp = data.daily.temperature_2m_min[index];
+          const precipProb = data.daily.precipitation_probability_max[index];
+
+          const description = wmoCodes[code] || "Condição desconhecida";
+          const dayDescription = (dayKeyword === "amanhã" || dayKeyword === "amanha") ? "Amanhã" : "Hoje";
+
+          return `Previsão para ${dayDescription} em Santa Izabel do Pará (${date}):\n- Condição: ${description}\n- Máxima: ${maxTemp}°C\n- Mínima: ${minTemp}°C\n- Prob. Chuva: ${precipProb}%`;
+
+      } catch (error) {
+          console.error("Erro ao buscar previsão do tempo:", error);
+          return "Desculpe, tive um problema ao buscar a previsão do tempo. Tente novamente mais tarde.";
+      }
+  }
+  // --- Fim da Funcionalidade de Previsão do Tempo ---
+
+
+  // Dicionário APRIMORADO de erros de digitação comuns
+  const commonTypos = {
+    "ola": "oi", "oii": "oi", "oie": "oi",
+    "blz": "beleza",
+    "td bem": "tudo bem", "tudo bom": "tudo bem",
+    "obg": "obrigado",
+    "vlw": "valeu",
+    "vc": "você",
+    "tbm": "também", "tb": "também",
+    "pq": "por que",
+    "qm": "quem",
+    "qd": "quando",
+    "msg": "mensagem",
+    "ok": "okay",
+    "oq": "o que",
+    "pra": "para",
+    "hj": "hoje",
+    "comprovante": "compromisso", "comprovantes": "compromissos",
+    "agenda hj": "agenda hoje", "compromisso hj": "compromisso hoje",
+    "amanha": "amanhã", 
+    "segunda-feira": "segunda", "terca-feira": "terça", "quarta-feira": "quarta", 
+    "quinta-feira": "quinta", "sexta-feira": "sexta", "sabado": "sábado",
+    "lembrar\s*:\s*": "lembrar ", 
+    "agendar\s*:\s*": "agendar ", "apagar\s*:\s*": "apagar ", "excluir\s*:\s*": "apagar ",
+    "previsao tempo": "previsão do tempo", "como esta o tempo": "previsão do tempo", "vai chover": "previsão do tempo" // Adiciona variações para tempo
+  };
+
+  let learningMode = false;
+  let pendingQuestion = "";
+
+  function addMessage(text, sender) {
+    const msgDiv = document.createElement("div");
+    let cssClass = sender; // bot, user, reminder
+    if (sender === 'weather') cssClass = 'weather'; // Classe específica para tempo
+    else if (sender === 'reminder') cssClass = 'reminder';
+    
+    msgDiv.classList.add("message", cssClass);
+    msgDiv.style.whiteSpace = "pre-wrap"; 
+    msgDiv.textContent = text;
+    chat.appendChild(msgDiv);
+    setTimeout(() => {
+        msgDiv.style.opacity = 1;
+        msgDiv.style.transform = "translateY(0)";
+    }, 10); 
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function cleanText(text) {
+    let cleaned = text.toLowerCase();
+    for (let typo in commonTypos) {
+      const regex = new RegExp(typo.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g'); 
+      cleaned = cleaned.replace(regex, commonTypos[typo]);
+    }
+    cleaned = cleaned.replace(/[^\w\sáéíóúãõâêîôûç\/\+\-\*]/gi, " ").replace(/\s+/g, ' ').trim();
+    return cleaned;
+  }
+
+  function tryCalculate(text) {
+    text = text.replace("x", "*").replace("×", "*").replace("÷", "/").replace(",", ".");
+    const match = text.match(/(\d*\.?\d+)\s*([\+\-\*\/])\s*(\d*\.?\d+)/);
+    if (match) {
+      try {
+        const a = parseFloat(match[1]);
+        const b = parseFloat(match[3]);
+        const op = match[2];
+        if (isNaN(a) || isNaN(b)) return null;
+        let result;
+        switch (op) {
+          case "+": result = a + b; break;
+          case "-": result = a - b; break;
+          case "*": result = a * b; break;
+          case "/": result = b !== 0 ? a / b : "Erro: divisão por zero"; break;
+          default: return null;
+        }
+        return typeof result === "number" ? `O resultado é ${parseFloat(result.toFixed(5))}` : result;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Função APRIMORADA de resposta do bot
+  async function botResponse(input) { // Tornou-se async para aguardar a API
+    const originalInput = input.trim();
+    const text = cleanText(originalInput); 
+
+    // --- Processamento de Previsão do Tempo (ANTES da agenda para priorizar) ---
+    if (text.includes("previsão do tempo")) {
+        let dayKeyword = "hoje";
+        if (text.includes("amanhã")) {
+            dayKeyword = "amanhã";
+        }
+        const weatherResult = await getWeatherForecast(dayKeyword);
+        // Adiciona a mensagem de tempo com estilo específico
+        addMessage(weatherResult, 'weather'); 
+        return null; // Retorna null pois a mensagem já foi adicionada
+    }
+
+    // --- Processamento de Comandos da Agenda ---
+    if (text.startsWith("agendar ")) {
+        const itemText = originalInput.substring(originalInput.toLowerCase().indexOf("agendar ") + 8).trim();
+        return itemText ? addAgendaItem(itemText) : "Por favor, diga o que você quer agendar.";
+    }
+    if (text === "ver agenda" || text === "minha agenda" || text.includes("todos compromissos")) {
+        return viewAgenda();
+    }
+    if (text.startsWith("apagar ")) {
+        const parts = text.split(" ");
+        const itemIndex = parts.find(part => !isNaN(parseInt(part)));
+        return itemIndex ? deleteAgendaItem(itemIndex) : "Por favor, informe o número do compromisso a apagar.";
+    }
+    if (text.startsWith("lembrar ") || text.startsWith("lembrete ")) {
+        const parts = text.split(" ");
+        const itemIndex = parts.find(part => !isNaN(parseInt(part)));
+        return itemIndex ? toggleReminder(itemIndex) : "Por favor, informe o número do compromisso para o lembrete.";
+    }
+    
+    const keywordsAgenda = ["agenda", "compromisso", "compromissos", "tarefa", "tarefas", "o que tenho", "quais sao", "quais meus"];
+    const diasSemana = ["hoje", "amanhã", "segunda", "terça", "terca", "quarta", "quinta", "sexta", "sábado", "sabado", "domingo"];
+    let targetDay = null;
+    for (const dia of diasSemana) {
+        if (text.includes(dia) && keywordsAgenda.some(kw => text.includes(kw))) {
+            targetDay = dia; break;
+        }
+    }
+    if (!targetDay && (text === "agenda hoje" || text === "compromissos hoje")) targetDay = "hoje";
+    if (!targetDay && (text === "agenda amanhã" || text === "compromissos amanhã")) targetDay = "amanhã";
+    if (targetDay) {
+        if (targetDay === "terca") targetDay = "terça";
+        if (targetDay === "sabado") targetDay = "sábado";
+        return viewAgendaForDay(targetDay);
+    }
+    // --- Fim do Processamento de Comandos da Agenda ---
+
+    // Modo Aprendizado
+    if (learningMode) {
+      if (text === "sim") {
+        addMessage("Qual a resposta que devo aprender para: '" + pendingQuestion + "'?", "bot");
+        learningMode = "waitingAnswer";
+        return null; 
+      }
+      if (text === "não" || text === "nao") {
+        learningMode = false; pendingQuestion = "";
+        return "Ok, talvez na próxima!";
+      }
+      if (learningMode === "waitingAnswer") {
+        saveLearnedKnowledge(pendingQuestion, originalInput); 
+        learningMode = false; pendingQuestion = "";
+        return "Aprendi! Obrigado por me ensinar.";
+      }
+    }
+
+    // Busca na Base de Conhecimento
+    if (knowledge[text]) {
+      const respostas = knowledge[text];
+      return respostas[Math.floor(Math.random() * respostas.length)];
+    }
+
+    // Tenta Cálculo Matemático
+    const calc = tryCalculate(text);
+    if (calc) return calc;
+
+    // Tenta aprender
+    pendingQuestion = text; 
+    learningMode = true;
+    return `Não sei responder "${originalInput}". Quer me ensinar como responder? (sim/não)`;
+  }
+
+  // Modificado para ser async
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+    addMessage(text, "user");
+    userInput.value = "";
+
+    const typingIndicator = document.createElement("div");
+    typingIndicator.classList.add("message", "bot");
+    typingIndicator.textContent = "ULTRON está pensando..."; // Mudado para "pensando" por causa da API
+    typingIndicator.style.opacity = 0.6;
+    typingIndicator.style.fontStyle = "italic";
+    chat.appendChild(typingIndicator);
+    chat.scrollTop = chat.scrollHeight;
+
+    // Aguarda a resposta do bot (que pode chamar a API)
+    const response = await botResponse(text);
+    
+    if (chat.contains(typingIndicator)) {
+        chat.removeChild(typingIndicator);
+    }
+    // Adiciona a resposta APENAS se botResponse retornar algo (não retorna para previsão do tempo)
+    if (response) {
+      addMessage(response, "bot");
+    }
+  }
+
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+
+</script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCsXT7QaBPdAiBrNlYkgh_12W8V69FU1XI",
+    authDomain: "ultron-10a7c.firebaseapp.com",
+    projectId: "ultron-10a7c",
+    storageBucket: "ultron-10a7c.firebasestorage.app",
+    messagingSenderId: "572864287623",
+    appId: "1:572864287623:web:18deaae57b184808b23922"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  async function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      const result = await auth.signInWithPopup(provider);
+      const user = result.user;
+      const nome = user.displayName;
+      const email = user.email;
+      const uid = user.uid;
+
+      document.getElementById("login-area").style.display = "none";
+      document.getElementById("chat-area").style.display = "flex";
+      document.getElementById("input-area").style.display = "flex";
+
+      console.log("Usuário logado com Google:", nome, email, uid);
+      loadKnowledge();
+      loadAgenda();
+      checkReminders();
+      userInput.focus();
+    } catch (error) {
+      console.error("Erro no login com Google:", error);
+      alert("Erro ao fazer login com o Google.");
+    }
+  }
+</script>
+
+</body>
+</html>
+
